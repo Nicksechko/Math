@@ -23,8 +23,6 @@ class Fraction {
 
   [[nodiscard]] std::string ToLaTex() const;
 
-  void PrintFrac() const;
-
   friend Fraction operator+(const Fraction& a, const Fraction& b);
 
   friend Fraction operator-(const Fraction& a, const Fraction& b);
@@ -86,7 +84,8 @@ class Fraction {
  private:
   void Normalization();
 
-  int numerator_, denominator_;
+  int numerator_;
+  int denominator_;
 };
 
 #endif //MATH__FRACTION_H_

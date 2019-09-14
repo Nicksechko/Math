@@ -26,10 +26,6 @@ std::string Fraction::ToLaTex() const {
       "{" + std::to_string(denominator_);
 }
 
-void Fraction::PrintFrac() const {
-  cout << numerator_ << "/" << denominator_ << endl;
-}
-
 Fraction operator+(const Fraction& a, const Fraction& b) {
   Fraction current_frac = a;
   current_frac.denominator_ = lcm(a.denominator_, b.denominator_);

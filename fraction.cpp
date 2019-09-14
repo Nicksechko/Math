@@ -149,6 +149,10 @@ Fraction operator/(const int& a, const Fraction& b) {
   return current_frac;
 }
 
+Fraction Fraction::operator-() const {
+  return Fraction(-numerator_, denominator_);
+}
+
 const Fraction& Fraction::operator+=(const Fraction& b) {
   int current_lcm = std::lcm(denominator_, b.denominator_);
   numerator_ *= current_lcm / denominator_;
@@ -226,6 +230,14 @@ std::ostream& operator<<(std::ostream& out, const Fraction& f) {
   out << "/";
   out << f.denominator_;
   return out;
+}
+
+Fraction abs(const Fraction& f) {
+  return Fraction(abs(f.numerator_), f.denominator_);
+}
+
+Fraction fabs(const Fraction& f) {
+  return Fraction(abs(f.numerator_), f.denominator_);
 }
 
 void Fraction::Test() {
@@ -379,3 +391,4 @@ void Fraction::Normalization() {
   numerator_ /= g;
   denominator_ /= g;
 }
+

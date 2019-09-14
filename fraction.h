@@ -57,6 +57,8 @@ class Fraction {
 
   friend Fraction operator/(const int& a, const Fraction& b);
 
+  Fraction operator-() const;
+
   const Fraction& operator+=(const Fraction& b);
 
   const Fraction& operator-=(const Fraction& b);
@@ -76,6 +78,10 @@ class Fraction {
   friend std::istream& operator>>(std::istream& in, Fraction& f);
 
   friend std::ostream& operator<<(std::ostream& out, const Fraction& f);
+
+  friend Fraction abs(const Fraction& f);
+
+  friend Fraction fabs(const Fraction& f);
 
   static void Test();
 

@@ -1,6 +1,11 @@
+#include <sstream>
 #include "fraction.h"
 
 Fraction::Fraction() : numerator_(0), denominator_(1) {}
+
+Fraction::Fraction(int numerator)
+  : numerator_(numerator),
+    denominator_(1) {}
 
 Fraction::Fraction(int numerator, int denominator) {
   assert(denominator != 0);
@@ -14,6 +19,9 @@ double Fraction::ToDouble() const {
 }
 
 std::string Fraction::ToLaTex() const {
+  if (denominator_ == 1) {
+    return std::to_string(numerator_);
+  }
   return "\frac{" + std::to_string(numerator_) + "}" +
       "{" + std::to_string(denominator_);
 }
@@ -203,6 +211,27 @@ const Fraction& Fraction::operator/=(const int& b) {
   return *this;
 }
 
+istream& operator>>(istream& in, Fraction& f) {
+  int numerator, denominator = 1;
+  in >> numerator;
+  if (in.peek() == '/'){
+    in.ignore();
+    in >> denominator;
+  }
+  f = Fraction(numerator, denominator);
+  return in;
+}
+
+ostream& operator<<(ostream& out, const Fraction& f) {
+  out << f.numerator_;
+  if (f.denominator_ == 1) {
+    return out;
+  }
+  out << "/";
+  out << f.denominator_;
+  return out;
+}
+
 void Fraction::Test() {
   {//Test Case 1
     const double eps = 1e-9;
@@ -213,11 +242,19 @@ void Fraction::Test() {
     assert(fabs(Fraction(-3, -11).ToDouble() - (double) 3 / 11) < eps);
   }
   {//Test Case 2
-    Fraction(0, 1).PrintFrac();
-    Fraction(2, 3).PrintFrac();
-    Fraction(-7, 3).PrintFrac();
-    Fraction(5, -9).PrintFrac();
-    Fraction(-3, -11).PrintFrac();
+    int n = 6;
+    std::string input = "6/3 0/6 4/6 -7/3 5/-9 -3/-11";
+    std::string output = "2 0 2/3 -7/3 -5/9 3/11 ";
+
+    istringstream in(input);
+    ostringstream out;
+    for (int i = 0; i < n; i++) {
+      Fraction f;
+      in >> f;
+      out << f << " ";
+    }
+
+    assert(out.str() == output);
   }
   //Test Case 3
   {

@@ -15,11 +15,13 @@ class Fraction {
  public:
   Fraction();
 
+  explicit Fraction(int numerator);
+
   explicit Fraction(int numerator, int denominator);
 
   [[nodiscard]] double ToDouble() const;
 
-  std::string ToLaTex() const;
+  [[nodiscard]] std::string ToLaTex() const;
 
   void PrintFrac() const;
 
@@ -74,6 +76,10 @@ class Fraction {
   const Fraction& operator*=(const int& b);
 
   const Fraction& operator/=(const int& b);
+
+  friend istream& operator>>(istream& in, Fraction& f);
+
+  friend ostream& operator<<(ostream& out, const Fraction& f);
 
   static void Test();
 

@@ -15,7 +15,7 @@ class Fraction {
  public:
   Fraction();
 
-  explicit Fraction(int numerator, int denominator);
+  Fraction(int numerator, int denominator);
 
   [[nodiscard]] double ToDouble() const;
 

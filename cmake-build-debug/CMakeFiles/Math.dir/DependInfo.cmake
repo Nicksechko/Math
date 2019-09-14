@@ -4,8 +4,8 @@ set(CMAKE_DEPENDS_LANGUAGES
   )
 # The set of files for implicit dependencies of each language:
 set(CMAKE_DEPENDS_CHECK_CXX
-  "/home/dragon-fly/Math/fraction.cpp" "/home/dragon-fly/Math/cmake-build-debug/CMakeFiles/Math.dir/fraction.cpp.o"
-  "/home/dragon-fly/Math/main.cpp" "/home/dragon-fly/Math/cmake-build-debug/CMakeFiles/Math.dir/main.cpp.o"
+  "/home/artemxx/Math/fraction.cpp" "/home/artemxx/Math/cmake-build-debug/CMakeFiles/Math.dir/fraction.cpp.o"
+  "/home/artemxx/Math/main.cpp" "/home/artemxx/Math/cmake-build-debug/CMakeFiles/Math.dir/main.cpp.o"
   )
 set(CMAKE_CXX_COMPILER_ID "GNU")
 

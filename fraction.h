@@ -19,6 +19,8 @@ class Fraction {
 
   [[nodiscard]] double ToDouble() const;
 
+  std::string ToLaTex() const;
+
   void PrintFrac() const;
 
   friend Fraction operator+(const Fraction& a, const Fraction& b);

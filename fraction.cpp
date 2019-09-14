@@ -13,6 +13,11 @@ double Fraction::ToDouble() const {
   return (double) numerator_ / denominator_;
 }
 
+std::string Fraction::ToLaTex() const {
+  return "\frac{" + std::to_string(numerator_) + "}" +
+      "{" + std::to_string(denominator_);
+}
+
 void Fraction::PrintFrac() const {
   cout << numerator_ << "/" << denominator_ << endl;
 }
@@ -216,7 +221,7 @@ void Fraction::Test() {
   }
   //Test Case 3
   {
-  //TODO
+    //TODO
   }
   {//Test Case 4
     assert(Fraction(0, 1) + Fraction(1, 3) == Fraction(1, 3));

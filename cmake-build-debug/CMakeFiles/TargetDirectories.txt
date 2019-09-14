@@ -1,0 +1,3 @@
+/home/dragon-fly/Math/cmake-build-debug/CMakeFiles/rebuild_cache.dir
+/home/dragon-fly/Math/cmake-build-debug/CMakeFiles/Math.dir
+/home/dragon-fly/Math/cmake-build-debug/CMakeFiles/edit_cache.dir

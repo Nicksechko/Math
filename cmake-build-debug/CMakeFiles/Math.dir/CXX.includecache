@@ -1,0 +1,32 @@
+#IncludeRegexLine: ^[ 	]*[#%][ 	]*(include|import)[ 	]*[<"]([^">]+)([">])
+
+#IncludeRegexScan: ^.*$
+
+#IncludeRegexComplain: ^$
+
+#IncludeRegexTransform: 
+
+/home/dragon-fly/Math/fraction.cpp
+fraction.h
+/home/dragon-fly/Math/fraction.h
+
+/home/dragon-fly/Math/fraction.h
+iostream
+-
+iostream
+-
+cassert
+-
+algorithm
+-
+numeric
+-
+cmath
+-
+
+/home/dragon-fly/Math/main.cpp
+iostream
+-
+fraction.h
+/home/dragon-fly/Math/fraction.h
+

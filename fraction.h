@@ -21,8 +21,6 @@ class Fraction {
 
   void PrintFrac() const;
 
-  Fraction& Normalization();
-
   friend Fraction operator+(const Fraction& a, const Fraction& b);
 
   friend Fraction operator-(const Fraction& a, const Fraction& b);
@@ -78,6 +76,8 @@ class Fraction {
   static void Test();
 
  private:
+  void Normalization();
+
   int numerator_, denominator_;
 };
 

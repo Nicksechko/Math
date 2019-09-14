@@ -9,16 +9,14 @@
 #include <numeric>
 #include <cmath>
 
-using namespace std;
-
 class Fraction {
  public:
   Fraction();
 
-  explicit Fraction(int numerator);
+  Fraction(int numerator);
 
-  explicit Fraction(int numerator, int denominator);
-  
+  Fraction(int numerator, int denominator);
+
   [[nodiscard]] double ToDouble() const;
 
   [[nodiscard]] std::string ToLaTex() const;
@@ -77,9 +75,9 @@ class Fraction {
 
   const Fraction& operator/=(const int& b);
 
-  friend istream& operator>>(istream& in, Fraction& f);
+  friend std::istream& operator>>(std::istream& in, Fraction& f);
 
-  friend ostream& operator<<(ostream& out, const Fraction& f);
+  friend std::ostream& operator<<(std::ostream& out, const Fraction& f);
 
   static void Test();
 

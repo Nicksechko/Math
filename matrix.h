@@ -9,29 +9,40 @@
 template<class T>
 class Matrix {
  private:
-  std::vector<std::vector<T>> elements_;
-
   const int n_{};
   const int m_{};
 
+  std::vector<std::vector<T>> elements_;
+
  public:
   explicit Matrix(int n, int m)
-      : elements_(std::vector<std::vector<T>>(n, std::vector<T>(m)))
-      , n_(n)
-      , m_(m){}
+      : n_(n)
+      , m_(m),
+      elements_(std::vector<std::vector<T>>(n, std::vector<T>(m))) {}
 
   Matrix() = default;
 
   explicit Matrix(std::vector<std::vector<T>> elements)
-      : elements_(std::move(elements))
-      , n_(elements.size())
-      , m_((n_ == 0) ? 0 : elements[0].size()) {}
+      : n_(elements.size())
+      , m_((n_ == 0) ? 0 : elements[0].size())
+      , elements_(std::move(elements)) {}
 
-  T &At(int i, int j) {
+  Matrix ToTranspose() const {
+    Matrix result(m_, n_);
+    for (int i = 0; i < m_; ++i) {
+      for (int j = 0; j < n_; ++j) {
+        result.At(i, j) = this->At(j, i);
+      }
+    }
+
+    return result;
+  }
+
+  T& At(int i, int j) {
     return elements_.at(i).at(j);
   }
 
-  const T &At(int i, int j) const {
+  const T& At(int i, int j) const {
     return elements_.at(i).at(j);
   }
 
@@ -45,7 +56,7 @@ class Matrix {
 };
 
 template<class T>
-bool operator==(const Matrix<T> &one, const Matrix<T> &two) {
+bool operator==(const Matrix<T>& one, const Matrix<T>& two) {
   if (one.GetNumRows() != two.GetNumRows() ||
       one.GetNumColumns() != two.GetNumColumns()) {
     return false;
@@ -63,13 +74,13 @@ bool operator==(const Matrix<T> &one, const Matrix<T> &two) {
 }
 
 template<class T>
-Matrix<T> operator+(const Matrix<T> &one, const Matrix<T> &two) {
+Matrix<T> operator+(const Matrix<T>& one, const Matrix<T>& two) {
   if (one.GetNumRows() != two.GetNumRows()) {
-    throw std::invalid_argument("Mismatched number of rows");
+    throw std::invalid_argument("[SUM] Mismatched number of rows");
   }
 
   if (one.GetNumColumns() != two.GetNumColumns()) {
-    throw std::invalid_argument("Mismatched number of columns");
+    throw std::invalid_argument("[SUM] Mismatched number of columns");
   }
 
   Matrix<T> result(one.GetNumRows(), one.GetNumColumns());
@@ -83,16 +94,16 @@ Matrix<T> operator+(const Matrix<T> &one, const Matrix<T> &two) {
 }
 
 template<class T>
-Matrix<T> operator*(const Matrix<T> &one, const Matrix<T> &two) {
+Matrix<T> operator*(const Matrix<T>& one, const Matrix<T>& two) {
   if (one.GetNumColumns() != two.GetNumRows()) {
-    throw std::invalid_argument("Mismatched number of rows");
+    throw std::invalid_argument("[MUL] Mismatched number of rows");
   }
 
   Matrix<T> result(one.GetNumRows(), two.GetNumColumns());
   for (int i = 0; i < result.GetNumRows(); ++i) {
     for (int j = 0; j < result.GetNumColumns(); ++j) {
       for (int k = 0; k < one.GetNumColumns(); ++k) {
-        result.At(i, j) += one.At(i, k) + two.At(k, j);
+        result.At(i, j) += one.At(i, k) * two.At(k, j);
       }
     }
   }
@@ -116,13 +127,13 @@ std::istream& operator>>(std::istream& in, Matrix<T>& matrix) {
 }
 
 template<class T>
-std::ostream &operator<<(std::ostream &out, const Matrix<T> &matrix) {
+std::ostream& operator<<(std::ostream& out, const Matrix<T>& matrix) {
   for (int i = 0; i < matrix.GetNumRows(); ++i) {
     for (int j = 0; j < matrix.GetNumColumns(); ++j) {
       if (j > 0) {
         out << " ";
       }
-      out << matrix.At(row, column);
+      out << matrix.At(i, j);
     }
     out << std::endl;
   }

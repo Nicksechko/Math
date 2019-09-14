@@ -26,13 +26,9 @@ std::string Fraction::ToLaTex() const {
       "{" + std::to_string(denominator_);
 }
 
-void Fraction::PrintFrac() const {
-  cout << numerator_ << "/" << denominator_ << endl;
-}
-
 Fraction operator+(const Fraction& a, const Fraction& b) {
   Fraction current_frac = a;
-  current_frac.denominator_ = lcm(a.denominator_, b.denominator_);
+  current_frac.denominator_ = std::lcm(a.denominator_, b.denominator_);
   current_frac.numerator_ *=
       current_frac.denominator_ / a.denominator_;
   current_frac.numerator_ +=
@@ -43,7 +39,7 @@ Fraction operator+(const Fraction& a, const Fraction& b) {
 
 Fraction operator-(const Fraction& a, const Fraction& b) {
   Fraction current_frac = a;
-  current_frac.denominator_ = lcm(a.denominator_, b.denominator_);
+  current_frac.denominator_ = std::lcm(a.denominator_, b.denominator_);
   current_frac.numerator_ *=
       current_frac.denominator_ / a.denominator_;
   current_frac.numerator_ -=
@@ -154,7 +150,7 @@ Fraction operator/(const int& a, const Fraction& b) {
 }
 
 const Fraction& Fraction::operator+=(const Fraction& b) {
-  int current_lcm = lcm(denominator_, b.denominator_);
+  int current_lcm = std::lcm(denominator_, b.denominator_);
   numerator_ *= current_lcm / denominator_;
   numerator_ += b.numerator_ * (current_lcm / b.denominator_);
   denominator_ = current_lcm;
@@ -163,7 +159,7 @@ const Fraction& Fraction::operator+=(const Fraction& b) {
 }
 
 const Fraction& Fraction::operator-=(const Fraction& b) {
-  int current_lcm = lcm(denominator_, b.denominator_);
+  int current_lcm = std::lcm(denominator_, b.denominator_);
   numerator_ *= current_lcm / denominator_;
   numerator_ -= b.numerator_ * (current_lcm / b.denominator_);
   denominator_ = current_lcm;
@@ -211,7 +207,7 @@ const Fraction& Fraction::operator/=(const int& b) {
   return *this;
 }
 
-istream& operator>>(istream& in, Fraction& f) {
+std::istream& operator>>(std::istream& in, Fraction& f) {
   int numerator, denominator = 1;
   in >> numerator;
   if (in.peek() == '/'){
@@ -222,7 +218,7 @@ istream& operator>>(istream& in, Fraction& f) {
   return in;
 }
 
-ostream& operator<<(ostream& out, const Fraction& f) {
+std::ostream& operator<<(std::ostream& out, const Fraction& f) {
   out << f.numerator_;
   if (f.denominator_ == 1) {
     return out;
@@ -246,8 +242,8 @@ void Fraction::Test() {
     std::string input = "6/3 0/6 4/6 -7/3 5/-9 -3/-11";
     std::string output = "2 0 2/3 -7/3 -5/9 3/11 ";
 
-    istringstream in(input);
-    ostringstream out;
+    std::istringstream in(input);
+    std::ostringstream out;
     for (int i = 0; i < n; i++) {
       Fraction f;
       in >> f;
@@ -379,7 +375,7 @@ void Fraction::Normalization() {
     numerator_ = -numerator_;
     denominator_ = -denominator_;
   }
-  int g = gcd(numerator_, denominator_);
+  int g = std::gcd(numerator_, denominator_);
   numerator_ /= g;
   denominator_ /= g;
 }

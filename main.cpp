@@ -1,11 +1,10 @@
 #include <iostream>
 
 #include "matrix.h"
-#include "fraction.h"
 
 int main() {
-  step_by_step_type = StepByStepType::MainSteps;
-  output_type = OutputType::LaTex;
+  Options::step_by_step_type = Options::StepByStepType::MainSteps;
+  Options::output_type = Options::OutputType::LaTex;
 
   // Fraction::Test();
 
@@ -27,8 +26,6 @@ int main() {
   std::cout << (lup_matrix.L * lup_matrix.U).ToLatex() << std::endl;
 
 //  std::cout << Matrix::Identity(2);
-
-
 
   return 0;
 }

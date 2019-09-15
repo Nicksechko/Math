@@ -182,7 +182,7 @@ void LinearSystem::Choice(int pos, Options::ChoiceType choice_type) {
     std::swap(column_permutation_[pos], column_permutation_[best_column]);
     A_.SwapColumns(pos, best_column);
   }
-  if (Options::step_by_step_type != Options::StepByStepType::Without) {
+  if (Options::step_by_step_type != Options::StepByStepType::Without && (best_row != pos || best_column != pos)) {
     OutputSystem();
   }
 }

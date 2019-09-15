@@ -18,7 +18,7 @@ std::string LUPMatrix::ToLatex() {
   out << "$$" << std::endl;
   out << "Permutation: " << std::endl;
   for (int item : column_permutation) {
-    out << item << "\\ ";
+    out << item + 1 << "\\ ";
   }
   out << std::endl;
   out << "$$" << std::endl;

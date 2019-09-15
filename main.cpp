@@ -5,12 +5,14 @@
 
 int main() {
   // Fraction::Test();
-  Matrix<Fraction> a({
+  Matrix a({
     {1, 2},
     {3, 4},
   });
 
-  LUPMatrix<Fraction> lup_a;
+//  std::cout << Matrix::Identity(2);
+
+  LUPMatrix lup_a;
   if (a.LUPTransform(lup_a)) {
     std::cout << lup_a.L << std::endl;
     std::cout << lup_a.U << std::endl;

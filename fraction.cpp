@@ -22,8 +22,8 @@ std::string Fraction::ToLaTex() const {
   if (denominator_ == 1) {
     return std::to_string(numerator_);
   }
-  return "\frac{" + std::to_string(numerator_) + "}" +
-      "{" + std::to_string(denominator_);
+  return "\\frac{" + std::to_string(numerator_) + "}" +
+      "{" + std::to_string(denominator_) + "}";
 }
 
 Fraction operator+(const Fraction& a, const Fraction& b) {

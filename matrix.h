@@ -7,6 +7,7 @@
 #include <vector>
 #include <numeric>
 #include <cassert>
+#include <sstream>
 
 #include "fraction.h"
 
@@ -16,6 +17,19 @@ enum class ChoiceType {
   Column,
   Submatrix
 };
+
+enum class StepByStepType {
+  Without,
+  MainSteps,
+  AllSteps
+} step_by_step_type = StepByStepType::Without;
+
+enum class OutputType {
+  Standard,
+  LaTex
+} output_type = OutputType::Standard;
+
+int latex_block_size = 2;
 
 struct LUPMatrix;
 
@@ -35,14 +49,6 @@ class Matrix {
 
   Matrix() = default;
 
-//  Matrix(Matrix&& matrix) noexcept = default;
-//
-//  Matrix(const Matrix& matrix) = default;
-//
-//  Matrix& operator=(Matrix&& matrix) noexcept = default;
-//
-//  Matrix& operator=(const Matrix& matrix) = default;
-//
   explicit Matrix(std::vector<std::vector<Fraction>> elements)
       : n_(elements.size()), m_((n_ == 0) ? 0 : static_cast<int>(elements[0].size())),
         elements_(std::move(elements)) {}
@@ -56,6 +62,22 @@ class Matrix {
     }
 
     return result;
+  }
+
+  std::string ToLatex() {
+    std::ostringstream out;
+    out << "\\begin{bmatrix}" << std::endl;
+    for (int i = 0; i < n_; ++i) {
+      for (int j = 0; j < m_; ++j) {
+        out << elements_[i][j].ToLaTex();
+        if (j + 1 != m_) {
+          out << " &";
+        }
+      }
+      out << " \\\\" << std::endl;
+    }
+    out << "\\end{bmatrix}" << std::endl;
+    return out.str();
   }
 
   Fraction& At(int i, int j) {
@@ -115,9 +137,21 @@ struct LUPMatrix {
   LUPMatrix(Matrix L, Matrix U, std::vector<int> row_permutation,
             std::vector<int> column_permutation);
 
-  LUPMatrix& operator=(LUPMatrix&& lup_matrix) noexcept = default;
-
-  LUPMatrix& operator=(const LUPMatrix& lup_matrix) = default;
+  std::string ToLatex() {
+    std::ostringstream out;
+    out << "$$" << std::endl;
+    out << "L: " << L.ToLatex();
+    out << "U: " << U.ToLatex();
+    out << "$$" << std::endl;
+    out << "$$" << std::endl;
+    out << "Permutation: " << std::endl;
+    for (int item : column_permutation) {
+      out << item << "\\ ";
+    }
+    out << std::endl;
+    out << "$$" << std::endl;
+    return out.str();
+  }
 
   Matrix L, U;
   std::vector<int> row_permutation, column_permutation;
@@ -133,6 +167,8 @@ class LinearSystem {
 
   int RunGauss(ChoiceType choice_type = ChoiceType::Submatrix);
 
+  void OutputSystem();
+
   Matrix GetSolutionMatrix();
 
   LUPMatrix ToLUPMatrix();
@@ -140,6 +176,8 @@ class LinearSystem {
  private:
   void Choice(int pos, ChoiceType choice_type = ChoiceType::Submatrix);
 
+  bool first;
+  int block_flag;
   int n_, rank_;
   Matrix A_, B_;
   std::vector<int> row_permutation_, column_permutation_;
@@ -182,7 +220,6 @@ Matrix operator+(const Matrix& one, const Matrix& two) {
   return result;
 }
 
-
 Matrix operator*(const Matrix& one, const Matrix& two) {
   if (one.GetNumColumns() != two.GetNumRows()) {
     throw std::invalid_argument("[MUL] Mismatched number of rows");
@@ -199,7 +236,6 @@ Matrix operator*(const Matrix& one, const Matrix& two) {
 
   return result;
 }
-
 
 std::istream& operator>>(std::istream& in, Matrix& matrix) {
   int n, m;
@@ -244,7 +280,6 @@ void Matrix::SwapRows(int first_row, int second_row) {
     std::swap(elements_[first_row][column], elements_[second_row][column]);
   }
 }
-
 
 void Matrix::AddColumns(int first_column, int second_column, Fraction coefficient) {
   for (int row = 0; row < n_; ++row) {
@@ -310,7 +345,9 @@ void Matrix::CopyColumn(const Matrix& source_matrix, int source_column, int dest
 bool Matrix::Inverse() {
   assert(n_ == m_);
   LinearSystem inverser(*this, Identity(n_));
-  operator<<(std::cout, *this);
+  if (step_by_step_type != StepByStepType::Without) {
+    std::cout << "Inverse Matrix" << std::endl << std::endl;
+  }
   int rank = inverser.RunGauss();
   if (rank != n_) {
     return false;
@@ -352,7 +389,9 @@ LUPMatrix::LUPMatrix(Matrix L,
       column_permutation(std::move(column_permutation)) {}
 
 LinearSystem::LinearSystem(Matrix A, Matrix B)
-    : n_(A.GetNumRows()),
+    : first(true),
+      block_flag(0),
+      n_(A.GetNumRows()),
       rank_(-1),
       A_(std::move(A)),
       B_(std::move(B)),
@@ -365,6 +404,10 @@ LinearSystem::LinearSystem(Matrix A, Matrix B)
 }
 
 int LinearSystem::RunDirectGauss(ChoiceType choice_type) {
+  if (step_by_step_type != StepByStepType::Without) {
+    std::cout << "Direct Gauss for system:" << std::endl << std::endl;
+    OutputSystem();
+  }
   for (int pos = 0; pos < n_; ++pos) {
     Choice(pos, choice_type);
     if (A_.At(pos, pos) == Fraction(0)) {
@@ -377,32 +420,110 @@ int LinearSystem::RunDirectGauss(ChoiceType choice_type) {
       Fraction coefficient = A_.At(row, pos) / A_.At(pos, pos);
       A_.SubtractRows(row, pos, coefficient);
       B_.SubtractRows(row, pos, coefficient);
+      if (step_by_step_type == StepByStepType::AllSteps) {
+        OutputSystem();
+      }
+    }
+    if (step_by_step_type == StepByStepType::MainSteps) {
+      OutputSystem();
     }
   }
+  if (step_by_step_type != StepByStepType::Without && block_flag != 0) {
+    std::cout << "$$" << std::endl;
+  }
+  first = true;
+  block_flag = 0;
 
   return rank_ = n_;
 }
 
 void LinearSystem::RunReverseGauss() {
+  if (step_by_step_type != StepByStepType::Without) {
+    std::cout << "Reverse Gauss for system:" << std::endl << std::endl;
+    OutputSystem();
+  }
   for (int pos = n_ - 1; pos >= 0; --pos) {
     if (A_.At(pos, pos) == Fraction(0)) {
       continue;
     }
     B_.DivideRow(pos, A_.At(pos, pos));
     A_.DivideRow(pos, A_.At(pos, pos));
+    if (step_by_step_type == StepByStepType::AllSteps) {
+      OutputSystem();
+    }
     for (int row = pos - 1; row >= 0; --row) {
       Fraction coefficient = A_.At(row, pos);
       A_.SubtractRows(row, pos, coefficient);
       B_.SubtractRows(row, pos, coefficient);
+      if (step_by_step_type == StepByStepType::AllSteps) {
+        OutputSystem();
+      }
+    }
+    if (step_by_step_type == StepByStepType::MainSteps) {
+      OutputSystem();
     }
   }
+  if (step_by_step_type != StepByStepType::Without && block_flag != 0) {
+    std::cout << "$$" << std::endl;
+  }
+  first = true;
+  block_flag = 0;
 }
 
 int LinearSystem::RunGauss(ChoiceType choice_type) {
+  if (step_by_step_type != StepByStepType::Without) {
+    std::cout << "Gauss" << std::endl << std::endl;
+  }
   RunDirectGauss(choice_type);
   RunReverseGauss();
 
   return rank_;
+}
+
+void LinearSystem::OutputSystem() {
+  if (output_type == OutputType::Standard) {
+    std::cout << n_ << ' ' << B_.GetNumColumns() << std::endl;
+    for (int row = 0; row < n_; ++row) {
+      for (int column = 0; column < n_; ++column) {
+        std::cout << A_.At(row, column) << ' ';
+      }
+      std::cout << ' ';
+      for (int column = 0; column < B_.GetNumColumns(); ++column) {
+        std::cout << B_.At(row, column) << ' ';
+      }
+      std::cout << std::endl;
+    }
+  } else {
+    if (block_flag == 0) {
+      std::cout << "$$" << std::endl;
+    }
+    if (!first) {
+      std::cout << "\\sim";
+    }
+    first = false;
+    std::cout << "\\begin{bmatrix}" << std::endl;
+    for (int row = 0; row < n_; ++row) {
+      for (int column = 0; column < n_; ++column) {
+        std::cout << A_.At(row, column).ToLaTex() << " & ";
+      }
+      std::cout << "\\vline & ";
+      for (int column = 0; column < B_.GetNumColumns(); ++column) {
+        std::cout << B_.At(row, column).ToLaTex();
+        if (column + 1 != B_.GetNumColumns()) {
+          std::cout << " & ";
+        }
+      }
+      std::cout << "\\\\" << std::endl;
+    }
+    std::cout << "\\end{bmatrix}" << std::endl;
+    if (block_flag + 1 == latex_block_size) {
+      std::cout << "\\sim" << std::endl;
+      std::cout << "$$" << std::endl;
+      block_flag = 0;
+    } else {
+      ++block_flag;
+    }
+  }
 }
 
 Matrix LinearSystem::GetSolutionMatrix() {
@@ -448,5 +569,8 @@ void LinearSystem::Choice(int pos, ChoiceType choice_type) {
   if (pos != best_column) {
     std::swap(column_permutation_[pos], column_permutation_[best_column]);
     A_.SwapColumns(pos, best_column);
+  }
+  if (step_by_step_type != StepByStepType::Without) {
+    OutputSystem();
   }
 }

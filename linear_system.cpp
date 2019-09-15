@@ -5,6 +5,7 @@ LinearSystem::LinearSystem(Matrix A, Matrix B)
       block_flag(0),
       n_(A.GetNumRows()),
       rank_(-1),
+      changes(""),
       A_(std::move(A)),
       B_(std::move(B)),
       row_permutation_(A.GetNumRows()),
@@ -119,6 +120,10 @@ void LinearSystem::OutputSystem() {
     if (block_flag == 0) {
       std::cout << "$$" << std::endl;
     }
+    if (!changes.empty()) {
+      std::cout << changes;
+      changes = "";
+    }
     if (!first) {
       std::cout << "\\sim";
     }
@@ -132,10 +137,10 @@ void LinearSystem::OutputSystem() {
       for (int column = 0; column < B_.GetNumColumns(); ++column) {
         std::cout << B_.At(row, column).ToLaTex();
         if (column + 1 != B_.GetNumColumns()) {
-          std::cout << " & ";
+          std::cout << " &";
         }
       }
-      std::cout << "\\\\" << std::endl;
+      std::cout << " \\\\" << std::endl;
     }
     std::cout << "\\end{bmatrix}" << std::endl;
     if (block_flag + 1 == Options::latex_block_size) {
@@ -183,15 +188,35 @@ void LinearSystem::Choice(int pos, Options::ChoiceType choice_type) {
     }
   }
 
+  std::ostringstream changes_stream;
+  bool add_change = false;
   if (pos != best_row) {
+    if (Options::step_by_step_type != Options::StepByStepType::Without &&
+      Options::output_type == Options::OutputType::LaTex) {
+      add_change = true;
+      changes_stream << "\\sim\\begin{bmatrix}" << std::endl;
+      changes_stream << "row: \\\\" << pos + 1 << " \\leftrightarrows " << best_row + 1 << "\\\\" << std::endl;
+    }
     std::swap(row_permutation_[pos], row_permutation_[best_row]);
     A_.SwapRows(pos, best_row);
     B_.SwapRows(pos, best_row);
   }
   if (pos != best_column) {
+    if (Options::step_by_step_type != Options::StepByStepType::Without &&
+        Options::output_type == Options::OutputType::LaTex) {
+      if (!add_change) {
+        changes_stream << "\\sim\\begin{bmatrix}" << std::endl;
+      }
+      add_change = true;
+      changes_stream << "col: \\\\" << pos + 1 << " \\leftrightarrows " << best_column + 1 << "\\\\" << std::endl;
+    }
     std::swap(column_permutation_[pos], column_permutation_[best_column]);
     A_.SwapColumns(pos, best_column);
   }
+  if (add_change) {
+    changes_stream << "\\end{bmatrix}" << std::endl;
+  }
+  changes = changes_stream.str();
   if (Options::step_by_step_type != Options::StepByStepType::Without && (best_row != pos || best_column != pos)) {
     OutputSystem();
   }

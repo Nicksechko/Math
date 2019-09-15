@@ -148,6 +148,7 @@ class LinearSystem {
   bool first;
   int block_flag;
   int n_, rank_;
+  std::string changes;
   Matrix A_, B_;
   std::vector<int> row_permutation_, column_permutation_;
 };

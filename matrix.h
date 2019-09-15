@@ -12,27 +12,27 @@
 #include "fraction.h"
 
 namespace Options {
-enum class ChoiceType {
-  Without,
-  Row,
-  Column,
-  Submatrix
-};
+  enum class ChoiceType {
+    Without,
+    Row,
+    Column,
+    Submatrix
+  };
 
-enum class StepByStepType {
-  Without,
-  MainSteps,
-  AllSteps
-};
+  enum class StepByStepType {
+    Without,
+    MainSteps,
+    AllSteps
+  };
 
-enum class OutputType {
-  Standard,
-  LaTex
-};
+  enum class OutputType {
+    Standard,
+    LaTex
+  };
 
-extern OutputType output_type;
-extern StepByStepType step_by_step_type;
-extern int latex_block_size;
+  extern OutputType output_type;
+  extern StepByStepType step_by_step_type;
+  extern int latex_block_size;
 }
 
 struct LUPMatrix;

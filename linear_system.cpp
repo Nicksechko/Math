@@ -28,15 +28,19 @@ int LinearSystem::RunDirectGauss(Options::ChoiceType choice_type) {
     if (A_.At(pos, pos) == Fraction(0)) {
       return rank_ = pos;
     }
+    bool changed = false;
     for (int row = pos + 1; row < A_.GetNumRows(); ++row) {
-      Fraction coefficient = A_.At(row, pos) / A_.At(pos, pos);
-      A_.SubtractRows(row, pos, coefficient);
-      B_.SubtractRows(row, pos, coefficient);
-      if (Options::step_by_step_type == Options::StepByStepType::AllSteps) {
-        OutputSystem();
+      if (A_.At(row, pos) != 0) {
+        changed = true;
+        Fraction coefficient = A_.At(row, pos) / A_.At(pos, pos);
+        A_.SubtractRows(row, pos, coefficient);
+        B_.SubtractRows(row, pos, coefficient);
+        if (Options::step_by_step_type == Options::StepByStepType::AllSteps) {
+          OutputSystem();
+        }
       }
     }
-    if (Options::step_by_step_type == Options::StepByStepType::MainSteps) {
+    if (Options::step_by_step_type == Options::StepByStepType::MainSteps && changed) {
       OutputSystem();
     }
   }
@@ -58,20 +62,26 @@ void LinearSystem::RunReverseGauss() {
     if (A_.At(pos, pos) == Fraction(0)) {
       continue;
     }
-    B_.DivideRow(pos, A_.At(pos, pos));
-    A_.DivideRow(pos, A_.At(pos, pos));
-    if (Options::step_by_step_type == Options::StepByStepType::AllSteps) {
-      OutputSystem();
-    }
-    for (int row = pos - 1; row >= 0; --row) {
-      Fraction coefficient = A_.At(row, pos);
-      A_.SubtractRows(row, pos, coefficient);
-      B_.SubtractRows(row, pos, coefficient);
+    if (A_.At(pos, pos) != 1) {
+      B_.DivideRow(pos, A_.At(pos, pos));
+      A_.DivideRow(pos, A_.At(pos, pos));
       if (Options::step_by_step_type == Options::StepByStepType::AllSteps) {
         OutputSystem();
       }
     }
-    if (Options::step_by_step_type == Options::StepByStepType::MainSteps) {
+    bool changed = false;
+    for (int row = pos - 1; row >= 0; --row) {
+      if (A_.At(row, pos) != 0) {
+        changed = true;
+        Fraction coefficient = A_.At(row, pos);
+        A_.SubtractRows(row, pos, coefficient);
+        B_.SubtractRows(row, pos, coefficient);
+        if (Options::step_by_step_type == Options::StepByStepType::AllSteps) {
+          OutputSystem();
+        }
+      }
+    }
+    if (Options::step_by_step_type == Options::StepByStepType::MainSteps && changed) {
       OutputSystem();
     }
   }

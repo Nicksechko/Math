@@ -1,6 +1,24 @@
 #include "matrix.h"
 
-Matrix Matrix::ToTranspose() const {
+Matrix::Matrix(int n, int m, int item)
+    : n_(n), m_(m),
+      elements_(std::vector<std::vector<Fraction>>(n, std::vector<Fraction>(m, item))) {}
+
+Matrix::Matrix(std::vector<std::vector<Fraction>> elements)
+    : n_(elements.size()), m_((n_ == 0) ? 0 : static_cast<int>(elements[0].size())),
+      elements_(std::move(elements)) {
+
+}
+
+Matrix::Matrix(const Permutation& permutation)
+    : n_(permutation.Size()), m_(permutation.Size()),
+      elements_() {
+  for (int i = 0; i < n_; i++) {
+    elements_[i][permutation.At(i)] = 1;
+  }
+}
+
+Matrix Matrix::GetTranspose() const {
   Matrix result(m_, n_);
   for (int i = 0; i < m_; ++i) {
     for (int j = 0; j < n_; ++j) {
@@ -9,22 +27,6 @@ Matrix Matrix::ToTranspose() const {
   }
 
   return result;
-}
-
-std::string Matrix::ToLatex() {
-  std::ostringstream out;
-  out << "\\begin{bmatrix}" << std::endl;
-  for (int i = 0; i < n_; ++i) {
-    for (int j = 0; j < m_; ++j) {
-      out << elements_[i][j].ToLaTex();
-      if (j + 1 != m_) {
-        out << " & ";
-      }
-    }
-    out << " \\\\" << std::endl;
-  }
-  out << "\\end{bmatrix}" << std::endl;
-  return out.str();
 }
 
 Fraction& Matrix::At(int i, int j) {
@@ -41,6 +43,27 @@ int Matrix::GetNumRows() const {
 
 int Matrix::GetNumColumns() const {
   return m_;
+}
+
+Matrix& Matrix::operator*=(const Permutation& permutation) {
+  ApplyColumnPermutation(permutation.GetInverse());
+  return *this;
+}
+
+bool operator==(const Matrix& lhs, const Fraction& rhs) {
+  for (int i = 0; i < lhs.GetNumRows(); ++i) {
+    for (int j = 0; j < lhs.GetNumRows(); ++j) {
+      if (lhs.At(i, j) != rhs) {
+        return false;
+      }
+    }
+  }
+
+  return true;
+}
+
+bool operator==(const Fraction& lhs, const Matrix& rhs) {
+  return operator==(rhs, lhs);
 }
 
 bool operator==(const Matrix& lhs, const Matrix& rhs) {
@@ -96,6 +119,18 @@ Matrix operator*(const Matrix& lhs, const Matrix& rhs) {
   return result;
 }
 
+Matrix operator*(const Permutation& lhs, const Matrix& rhs) {
+  Matrix result(rhs);
+  result.ApplyRowPermutation(lhs);
+  return result;
+}
+
+Matrix operator*(const Matrix& lhs, const Permutation& rhs) {
+  Matrix result(lhs);
+  result *= rhs;
+  return result;
+}
+
 std::istream& operator>>(std::istream& in, Matrix& matrix) {
   int n, m;
   in >> n >> m;
@@ -110,129 +145,313 @@ std::istream& operator>>(std::istream& in, Matrix& matrix) {
   return in;
 }
 
-std::ostream& operator<<(std::ostream& out, const Matrix& matrix) {
-  for (int i = 0; i < matrix.GetNumRows(); ++i) {
-    for (int j = 0; j < matrix.GetNumColumns(); ++j) {
+std::string Matrix::ToString() const {
+  std::ostringstream out;
+  for (int i = 0; i < GetNumRows(); ++i) {
+    for (int j = 0; j < GetNumColumns(); ++j) {
       if (j > 0) {
         out << " ";
       }
-      out << matrix.At(i, j);
+      out << elements_[i][j];
+    }
+    if (i + 1 != GetNumRows()) {
+      out << std::endl;
+    }
+  }
+
+  return out.str();
+}
+
+std::string Matrix::ToLaTex() const {
+  std::ostringstream out;
+  out << "\\begin{bmatrix}" << std::endl;
+  for (int i = 0; i < n_; ++i) {
+    for (int j = 0; j < m_; ++j) {
+      out << elements_[i][j].ToLaTex();
+      if (j + 1 != m_) {
+        out << " & ";
+      }
+    }
+    if (i + 1 != n_) {
+      out << " \\\\";
     }
     out << std::endl;
+  }
+  out << "\\end{bmatrix}";
+
+  return out.str();
+}
+
+std::ostream& operator<<(std::ostream& out, const Matrix& matrix) {
+  if (Options::output_type == Options::OutputType::Standard) {
+    out << matrix.ToString() << std::endl;
+  } else if (Options::output_type == Options::OutputType::LaTex) {
+    out << matrix.ToLaTex() << std::endl;
   }
 
   return out;
 }
 
-void Matrix::AddRows(int first_row, int second_row, Fraction coefficient) {
+bool Matrix::AddRow(int first_row, int second_row, Fraction coefficient) {
+  if (coefficient == 0) {
+    return false;
+  }
+
+  bool result = false;
   for (int column = 0; column < m_; ++column) {
-    elements_[first_row][column] += coefficient * elements_[second_row][column];
+    if (elements_[second_row][column] != 0) {
+      result = true;
+      elements_[first_row][column] += coefficient * elements_[second_row][column];
+    }
   }
+
+  return result;
 }
 
-void Matrix::SubtractRows(int minuend_row, int subtrahend_row, Fraction coefficient) {
-  AddRows(minuend_row, subtrahend_row, -coefficient);
+bool Matrix::SubtractRow(int minuend_row, int subtrahend_row, Fraction coefficient) {
+  return AddRow(minuend_row, subtrahend_row, -coefficient);
 }
 
-void Matrix::SwapRows(int first_row, int second_row) {
+bool Matrix::MultiplyRow(int row, Fraction coefficient) {
+  if (coefficient == 1) {
+    return false;
+  }
+
+  bool result = false;
   for (int column = 0; column < m_; ++column) {
-    std::swap(elements_[first_row][column], elements_[second_row][column]);
+    if (elements_[row][column] != 0) {
+      result = true;
+      elements_[row][column] *= coefficient;
+    }
   }
+
+  return result;
 }
 
-void Matrix::AddColumns(int first_column, int second_column, Fraction coefficient) {
-  for (int row = 0; row < n_; ++row) {
-    elements_[row][first_column] += coefficient * elements_[row][second_column];
+bool Matrix::DivideRow(int row, Fraction coefficient) {
+  return MultiplyRow(row, 1 / coefficient);
+}
+
+bool Matrix::SwapRows(int first_row, int second_row) {
+  if (first_row == second_row) {
+    return false;
   }
-}
 
-void Matrix::SubtractColumns(int minuend_column, int subtrahend_column, Fraction coefficient) {
-  AddColumns(minuend_column, subtrahend_column, -coefficient);
-}
-
-void Matrix::SwapColumns(int first_column, int second_column) {
-  for (int row = 0; row < n_; ++row) {
-    std::swap(elements_[row][first_column], elements_[row][second_column]);
-  }
-}
-
-void Matrix::MultiplyRow(int row, Fraction coefficient) {
+  bool result = false;
   for (int column = 0; column < m_; ++column) {
-    elements_[row][column] *= coefficient;
+    if (elements_[first_row][column] != elements_[second_row][column]) {
+      result = true;
+      std::swap(elements_[first_row][column], elements_[second_row][column]);
+    }
   }
+
+  return result;
 }
 
-void Matrix::DivideRow(int row, Fraction coefficient) {
-  MultiplyRow(row, 1 / coefficient);
-}
-
-void Matrix::MultiplyColumn(int column, Fraction coefficient) {
-  for (int row = 0; row < n_; ++row) {
-    elements_[row][column] *= coefficient;
+bool Matrix::CopyRow(int source_row, int destination_row) {
+  if (source_row == destination_row) {
+    return false;
   }
-}
 
-void Matrix::DivideColumn(int column, Fraction coefficient) {
-  assert(coefficient == Fraction(0));
-  MultiplyColumn(column, 1 / coefficient);
-}
-
-void Matrix::CopyRow(int source_row, int destination_row) {
+  bool result = false;
   for (int column = 0; column < m_; ++column) {
-    elements_[destination_row][column] = elements_[source_row][column];
+    if (elements_[destination_row][column] != elements_[source_row][column]) {
+      result = true;
+      elements_[destination_row][column] = elements_[source_row][column];
+    }
   }
+
+  return result;
 }
 
-void Matrix::CopyColumn(int source_column, int destination_column) {
-  for (int row = 0; row < n_; ++row) {
-    elements_[row][destination_column] = elements_[row][source_column];
-  }
-}
-
-void Matrix::CopyRow(const Matrix& source_matrix, int source_row, int destination_row) {
+bool Matrix::CopyRow(const Matrix& source_matrix, int source_row, int destination_row) {
+  bool result = false;
   for (int column = 0; column < m_; ++column) {
-    elements_[destination_row][column] = source_matrix.At(source_row, column);
+    if (elements_[destination_row][column] != source_matrix.At(source_row, column)) {
+      result = true;
+      elements_[destination_row][column] = source_matrix.At(source_row, column);
+    }
   }
+
+  return result;
 }
 
-void Matrix::CopyColumn(const Matrix& source_matrix, int source_column, int destination_column) {
-  for (int row = 0; row < n_; ++row) {
-    elements_[row][destination_column] = source_matrix.At(row, source_column);
+void Matrix::ApplyRowPermutation(const Permutation& permutation) {
+  assert(permutation.Size() == n_);
+  Matrix result(n_, m_);
+  for (int i = 0; i < n_; ++i) {
+    result.CopyRow(*this, permutation.At(i), i);
   }
+  operator=(result);
+}
+
+bool Matrix::AddColumn(int first_column, int second_column, Fraction coefficient) {
+  if (coefficient == 0) {
+    return false;
+  }
+
+  bool result = false;
+  for (int row = 0; row < n_; ++row) {
+    if (elements_[row][second_column] != 0) {
+      result = true;
+      elements_[row][first_column] += coefficient * elements_[row][second_column];
+    }
+  }
+
+  return result;
+}
+
+bool Matrix::SubtractColumn(int minuend_column, int subtrahend_column, Fraction coefficient) {
+  return AddColumn(minuend_column, subtrahend_column, -coefficient);
+}
+
+bool Matrix::MultiplyColumn(int column, Fraction coefficient) {
+  if (coefficient == 1) {
+    return false;
+  }
+
+  int result = false;
+  for (int row = 0; row < n_; ++row) {
+    if (elements_[row][column] != 0) {
+      result = true;
+      elements_[row][column] *= coefficient;
+    }
+  }
+
+  return result;
+}
+
+bool Matrix::DivideColumn(int column, Fraction coefficient) {
+  return MultiplyColumn(column, 1 / coefficient);
+}
+
+bool Matrix::SwapColumns(int first_column, int second_column) {
+  if (first_column == second_column) {
+    return false;
+  }
+
+  int result = false;
+  for (int row = 0; row < n_; ++row) {
+    if (elements_[row][first_column] != elements_[row][second_column]) {
+      result = true;
+      std::swap(elements_[row][first_column], elements_[row][second_column]);
+    }
+  }
+
+  return result;
+}
+
+bool Matrix::CopyColumn(int source_column, int destination_column) {
+  if (source_column == destination_column) {
+    return false;
+  }
+
+  bool result = false;
+  for (int row = 0; row < n_; ++row) {
+    if (elements_[row][destination_column] != elements_[row][source_column]) {
+      result = true;
+      elements_[row][destination_column] = elements_[row][source_column];
+    }
+  }
+
+  return result;
+}
+
+bool Matrix::CopyColumn(const Matrix& source_matrix, int source_column, int destination_column) {
+  bool result = false;
+  for (int row = 0; row < n_; ++row) {
+    if (elements_[row][destination_column] != source_matrix.At(row, source_column)) {
+      result = true;
+      elements_[row][destination_column] = source_matrix.At(row, source_column);
+    }
+  }
+
+  return result;
+}
+
+void Matrix::ApplyColumnPermutation(const Permutation& permutation) {
+  assert(permutation.Size() == m_);
+  Matrix result(n_, m_);
+  for (int column = 0; column < m_; ++column) {
+    result.CopyColumn(*this, permutation.At(column), column);
+  }
+  operator=(result);
+}
+
+bool Matrix::IsLowerTriangular() const {
+  for (int row = 0; row < n_; ++row) {
+    for (int column = row + 1; column < m_; ++column) {
+      if (elements_[row][column] != 0) {
+        return false;
+      }
+    }
+  }
+
+  return true;
+}
+
+bool Matrix::IsUpperTriangular() const {
+  for (int column = 0; column < m_; ++column) {
+    for (int row = column + 1; row < n_; ++row) {
+      if (elements_[row][column] != 0) {
+        return false;
+      }
+    }
+  }
+
+  return true;
+}
+
+bool Matrix::IsDiagonal() const {
+  for (int row = 0; row < n_; ++row) {
+    for (int column = 0; column < m_; ++column) {
+      if (row != column && elements_[row][column] != 0) {
+        return false;
+      }
+    }
+  }
+
+  return true;
+}
+
+Matrix Matrix::GetInverse() const {
+  assert(n_ == m_);
+  LinearSystem inverser(*this, Identity(n_));
+  bool linear_independent = inverser.RunGauss();
+  Options::writer << inverser << std::endl;
+  if (!linear_independent) {
+    return Matrix(n_, n_);
+  }
+
+  return inverser.GetSolutionMatrix();
 }
 
 bool Matrix::Inverse() {
-  assert(n_ == m_);
-  LinearSystem inverser(*this, Identity(n_));
-  if (Options::step_by_step_type != Options::StepByStepType::Without) {
-    std::cout << "Inverse Matrix" << std::endl << std::endl;
-  }
-  int rank = inverser.RunGauss();
-  if (rank != n_) {
+  Matrix result = GetInverse();
+  if (result == 0) {
     return false;
+  } else {
+    operator=(result);
+    return true;
   }
-  operator=(inverser.GetSolutionMatrix());
-
-  return true;
 }
 
-bool Matrix::LUPTransform(LUPMatrix& lup_matrix) {
+LUPMatrix Matrix::GetLUPTransform(Options::ChoiceType choice_type) const {
   assert(n_ == m_);
-  LinearSystem transformer(*this, Identity(n_));
-  int rank = transformer.RunDirectGauss(Options::ChoiceType::Row);
-  if (rank < n_) {
-    return false;
+  LinearSystem transformer(*this, Identity(n_), LinearSystem::Mode::LU);
+  bool linear_independent = transformer.RunDirectGauss(choice_type);
+  Options::writer << transformer << std::endl;
+  if (!linear_independent) {
+    return LUPMatrix();
   }
-  lup_matrix = transformer.ToLUPMatrix();
-  assert(lup_matrix.L.Inverse());
 
-  return true;
+  return transformer.GetLUPMatrix();
 }
 
 Matrix Matrix::Identity(int n) {
   Matrix identity(n, n);
   for (int i = 0; i < n; i++) {
-    identity.At(i, i) = Fraction(1);
+    identity.At(i, i) = 1;
   }
 
   return identity;

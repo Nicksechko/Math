@@ -1,59 +1,95 @@
 #pragma once
 
 #include <iostream>
-#include <fstream>
 #include <stdexcept>
-#include <utility>
 #include <vector>
 #include <numeric>
 #include <cassert>
+#include <algorithm>
 #include <sstream>
 
 #include "fraction.h"
 
 namespace Options {
-  enum class ChoiceType {
-    Without,
-    Row,
-    Column,
-    Submatrix
-  };
+enum class ChoiceType {
+  Without,
+  Row,
+  Column,
+  Submatrix
+};
 
-  enum class StepByStepType {
-    Without,
-    MainSteps,
-    AllSteps
-  };
+enum class StepByStepType {
+  Without,
+  MainSteps,
+  AllSteps
+};
 
-  enum class OutputType {
-    Standard,
-    LaTex
-  };
+enum class OutputType {
+  Standard,
+  LaTex
+};
 
-  extern OutputType output_type;
-  extern StepByStepType step_by_step_type;
-  extern int latex_block_size;
+extern std::ostringstream writer;
+extern OutputType output_type;
+extern StepByStepType step_by_step_type;
+extern int max_matrices_count_in_row;
 }
 
-struct LUPMatrix;
+class Permutation;
+
+class Matrix;
+
+class ExtendedMatrix;
+
+class LUPMatrix;
 
 class LinearSystem;
 
+class Permutation {
+ public:
+  Permutation() = default;
+
+  Permutation(const Permutation& permutation) = default;
+
+  explicit Permutation(int n);
+
+  explicit Permutation(std::vector<int> permutation);
+
+  bool Transposition(int i, int j);
+
+  [[nodiscard]] int At(int pos) const;
+
+  [[nodiscard]] int Size() const;
+
+  [[nodiscard]] Matrix AsMatrix() const;
+
+  [[nodiscard]] Permutation GetInverse() const;
+
+  void Inverse();
+
+  friend Permutation operator*(const Permutation& lhs, const Permutation& rhs);
+
+  [[nodiscard]] std::string ToString() const;
+
+  [[nodiscard]] std::string ToLaTex() const;
+
+  friend std::ostream& operator<<(std::ostream& out, const Permutation& permutation);
+
+ private:
+  std::vector<int> permutation_;
+};
+
 class Matrix {
  public:
-  explicit Matrix(int n, int m)
-      : n_(n), m_(m),
-        elements_(std::vector<std::vector<Fraction>>(n, std::vector<Fraction>(m))) {}
-
   Matrix() = default;
 
-  explicit Matrix(std::vector<std::vector<Fraction>> elements)
-      : n_(elements.size()), m_((n_ == 0) ? 0 : static_cast<int>(elements[0].size())),
-        elements_(std::move(elements)) {}
+  Matrix(int n, int m, int item = 0);
 
-  [[nodiscard]] Matrix ToTranspose() const;
+  explicit Matrix(std::vector<std::vector<Fraction>> elements);
 
-  std::string ToLatex();
+  explicit Matrix(const Permutation& permutation);
+
+  [[nodiscard]] Matrix GetTranspose() const;
 
   Fraction& At(int i, int j);
 
@@ -63,92 +99,238 @@ class Matrix {
 
   [[nodiscard]] int GetNumColumns() const;
 
+  Matrix& operator*=(const Permutation& permutation);
+
+  friend bool operator==(const Matrix& lhs, const Fraction& rhs);
+
+  friend bool operator==(const Fraction& lhs, const Matrix& rhs);
+
   friend bool operator==(const Matrix& lhs, const Matrix& rhs);
 
   friend Matrix operator+(const Matrix& lhs, const Matrix& rhs);
 
   friend Matrix operator*(const Matrix& lhs, const Matrix& rhs);
 
+  friend Matrix operator*(const Permutation& lhs, const Matrix& rhs);
+
+  friend Matrix operator*(const Matrix& lhs, const Permutation& rhs);
+
   friend std::istream& operator>>(std::istream& in, Matrix& matrix);
+
+  [[nodiscard]] std::string ToString() const;
+
+  [[nodiscard]] std::string ToLaTex() const;
 
   friend std::ostream& operator<<(std::ostream& out, const Matrix& matrix);
 
-  void MultiplyRow(int row, Fraction coefficient);
+  bool AddRow(int first_row, int second_row, Fraction coefficient = 1);
 
-  void DivideRow(int row, Fraction coefficient);
+  bool SubtractRow(int minuend_row, int subtrahend_row, Fraction coefficient = 1);
 
-  void MultiplyColumn(int column, Fraction coefficient);
+  bool MultiplyRow(int row, Fraction coefficient);
 
-  void DivideColumn(int column, Fraction coefficient);
+  bool DivideRow(int row, Fraction coefficient);
 
-  void AddRows(int first_row, int second_row, Fraction coefficient = Fraction(1));
+  bool SwapRows(int first_row, int second_row);
 
-  void SubtractRows(int minuend_row, int subtrahend_row, Fraction coefficient = Fraction(1));
+  bool CopyRow(int source_row, int destination_row);
 
-  void SwapRows(int first_row, int second_row);
+  bool CopyRow(const Matrix& source_matrix, int source_row, int destination_row);
 
-  void AddColumns(int first_column, int second_column, Fraction coefficient = Fraction(1));
+  void ApplyRowPermutation(const Permutation& permutation);
 
-  void SubtractColumns(int minuend_column, int subtrahend_column, Fraction coefficient = Fraction(1));
+  bool AddColumn(int first_column, int second_column, Fraction coefficient = 1);
 
-  void SwapColumns(int first_column, int second_column);
+  bool SubtractColumn(int minuend_column, int subtrahend_column, Fraction coefficient = 1);
 
-  void CopyRow(int source_row, int destination_row);
+  bool MultiplyColumn(int column, Fraction coefficient);
 
-  void CopyColumn(int source_column, int destination_column);
+  bool DivideColumn(int column, Fraction coefficient);
 
-  void CopyRow(const Matrix& source_matrix, int source_row, int destination_row);
+  bool SwapColumns(int first_column, int second_column);
 
-  void CopyColumn(const Matrix& source_matrix, int source_column, int destination_column);
+  bool CopyColumn(int source_column, int destination_column);
+
+  bool CopyColumn(const Matrix& source_matrix, int source_column, int destination_column);
+
+  void ApplyColumnPermutation(const Permutation& permutation);
+
+  [[nodiscard]] bool IsLowerTriangular() const;
+
+  [[nodiscard]] bool IsUpperTriangular() const;
+
+  [[nodiscard]] bool IsDiagonal() const;
+
+  [[nodiscard]] Matrix GetInverse() const;
 
   bool Inverse();
 
-  bool LUPTransform(LUPMatrix& lup_matrix);
+  [[nodiscard]] LUPMatrix GetLUPTransform(
+      Options::ChoiceType choice_type = Options::ChoiceType::Column) const;
 
   static Matrix Identity(int n);
 
  private:
-  int n_;
-  int m_;
-
+  int n_{}, m_{};
   std::vector<std::vector<Fraction>> elements_;
 };
 
-struct LUPMatrix {
+class LUPMatrix {
+ public:
   LUPMatrix() = default;
 
-  LUPMatrix(Matrix L, Matrix U, std::vector<int> row_permutation,
-            std::vector<int> column_permutation);
+  LUPMatrix(Matrix L, Matrix U, const Permutation& row_permutation, const Permutation& column_permutation);
 
-  std::string ToLatex();
+  explicit LUPMatrix(const ExtendedMatrix& system);
 
-  Matrix L, U;
-  std::vector<int> row_permutation, column_permutation;
+  [[nodiscard]] const Matrix& GetLowerMatrix() const;
+
+  [[nodiscard]] const Matrix& GetUpperMatrix() const;
+
+  [[nodiscard]] const Permutation& GetRowPermutation() const;
+
+  [[nodiscard]] const Permutation& GetColumnPermutation() const;
+
+  [[nodiscard]] Matrix GetMatrix() const;
+
+  [[nodiscard]] std::string ToString() const;
+
+  [[nodiscard]] std::string ToLaTex() const;
+
+  friend std::ostream& operator<<(std::ostream& out, const LUPMatrix& lup_matrix);
+
+ private:
+  Matrix l_, u_;
+  Permutation row_permutation_, column_permutation_;
+};
+
+class ExtendedMatrix {
+ public:
+  ExtendedMatrix(Matrix a, Matrix b);
+
+  bool MultiplyRow(int row, Fraction coefficient);
+
+  bool AddRow(int first_row, int second_row, Fraction coefficient = 1);
+
+  bool SwapRows(int first_row, int second_row);
+
+  bool SwapColumns(int first_column, int second_column);
+
+  [[nodiscard]] const Matrix& GetMainMatrix() const;
+
+  [[nodiscard]] const Matrix& GetExtensionMatrix() const;
+
+  [[nodiscard]] const Permutation& GetRowPermutation() const;
+
+  [[nodiscard]] const Permutation& GetMainColumnPermutation() const;
+
+  [[nodiscard]] const Permutation& GetExtensionColumnPermutation() const;
+
+  [[nodiscard]] const Fraction& At(int row, int column) const;
+
+  [[nodiscard]] int GetNumRows() const;
+
+  [[nodiscard]] int GetNumColumns() const;
+
+  [[nodiscard]] std::string ToString() const;
+
+  [[nodiscard]] std::string ToLaTex() const;
+
+  friend std::ostream& operator<<(std::ostream& out, const ExtendedMatrix& matrix);
+
+ private:
+  Matrix main_, extension_;
+  Permutation row_permutation_;
+  Permutation main_column_permutation_, extension_column_permutation_;
 };
 
 class LinearSystem {
  public:
-  LinearSystem(Matrix A, Matrix B);
+  enum class Mode {
+    Standard,
+    LU,
+  };
 
-  int RunDirectGauss(Options::ChoiceType choice_type = Options::ChoiceType::Submatrix);
+  class SwapMatrix {
+   public:
+    SwapMatrix();
+
+    void SetRowSwap(int first_row, int second_row);
+
+    void SetMainColumnSwap(int first_column, int second_column);
+
+    void SetExtensionColumnSwap(int first_column, int second_column);
+
+    [[nodiscard]] bool IsEmpty() const;
+
+    void Clear();
+
+    [[nodiscard]] std::string ToString() const;
+
+    [[nodiscard]] std::string ToLaTex() const;
+
+    friend std::ostream& operator<<(std::ostream& out, const SwapMatrix& swaps);
+
+   private:
+    int first_row_, second_row_;
+    int first_main_column_, second_main_column_;
+    int first_extension_column_, second_extension_column_;
+  };
+
+  LinearSystem(const Matrix& a, const Matrix& b, Mode mode = Mode::Standard);
+
+  explicit LinearSystem(const ExtendedMatrix& system, Mode mode = Mode::Standard);
+
+  bool RunDirectGauss(Options::ChoiceType choice_type = Options::ChoiceType::Column);
 
   void RunReverseGauss();
 
-  int RunGauss(Options::ChoiceType choice_type = Options::ChoiceType::Submatrix);
+  bool RunGauss(Options::ChoiceType choice_type = Options::ChoiceType::Column);
 
-  void OutputSystem();
+  [[nodiscard]] Matrix GetSolutionMatrix() const;
 
-  Matrix GetSolutionMatrix();
+  [[nodiscard]] const ExtendedMatrix& GetExtendedMatrix() const;
 
-  LUPMatrix ToLUPMatrix();
+  [[nodiscard]] LUPMatrix GetLUPMatrix() const;
+
+  [[nodiscard]] std::string ToString() const;
+
+  [[nodiscard]] std::string ToLaTex() const;
+
+  friend std::ostream& operator<<(std::ostream& out, const LinearSystem& system);
 
  private:
-  void Choice(int pos, Options::ChoiceType choice_type = Options::ChoiceType::Submatrix);
+  enum class OperationType {
+    AddRow,
+    MultiplyRow,
+    SwapRows,
+    SwapColumns,
+    MainOutput
+  };
 
-  bool first;
-  int block_flag;
-  int n_, rank_;
-  std::string changes;
-  Matrix A_, B_;
-  std::vector<int> row_permutation_, column_permutation_;
+  struct Operation {
+    Operation() = default;
+
+    Operation(OperationType operation_type, int lhs, int rhs, Fraction coefficient);
+
+    OperationType operation_type = OperationType::MainOutput;
+    int lhs = 0, rhs = 0;
+    Fraction coefficient = 0;
+  };
+
+  bool AddMainOutput();
+
+  bool PerformOperation(OperationType operation_type, int lhs, int rhs, Fraction coefficient);
+
+  bool Choice(int pos, Options::ChoiceType choice_type = Options::ChoiceType::Column);
+
+  bool ApplyOperation(OperationType operation_type, int lhs, int rhs, Fraction coefficient);
+
+  bool ApplyOperation(const Operation& operation);
+
+  Mode mode_;
+  int n_, m_, rank_;
+  const ExtendedMatrix start_system_;
+  ExtendedMatrix system_;
+  std::vector<Operation> history_;
 };

@@ -12,7 +12,8 @@ Matrix::Matrix(std::vector<std::vector<Fraction>> elements)
 
 Matrix::Matrix(const Permutation& permutation)
     : n_(permutation.Size()), m_(permutation.Size()),
-      elements_() {
+      elements_(std::vector<std::vector<Fraction>>(
+          permutation.Size(), std::vector<Fraction>(permutation.Size()))) {
   for (int i = 0; i < n_; i++) {
     elements_[i][permutation.At(i)] = 1;
   }
@@ -184,9 +185,9 @@ std::string Matrix::ToLaTex() const {
 
 std::ostream& operator<<(std::ostream& out, const Matrix& matrix) {
   if (Options::output_type == Options::OutputType::Standard) {
-    out << matrix.ToString() << std::endl;
+    out << matrix.ToString();
   } else if (Options::output_type == Options::OutputType::LaTex) {
-    out << matrix.ToLaTex() << std::endl;
+    out << matrix.ToLaTex();
   }
 
   return out;
@@ -276,13 +277,16 @@ bool Matrix::CopyRow(const Matrix& source_matrix, int source_row, int destinatio
   return result;
 }
 
-void Matrix::ApplyRowPermutation(const Permutation& permutation) {
+bool Matrix::ApplyRowPermutation(const Permutation& permutation) {
   assert(permutation.Size() == n_);
-  Matrix result(n_, m_);
+  Matrix result(elements_);
+  bool answer = false;
   for (int i = 0; i < n_; ++i) {
-    result.CopyRow(*this, permutation.At(i), i);
+    answer |= result.CopyRow(*this, permutation.At(i), i);
   }
   operator=(result);
+
+  return answer;
 }
 
 bool Matrix::AddColumn(int first_column, int second_column, Fraction coefficient) {
@@ -369,13 +373,16 @@ bool Matrix::CopyColumn(const Matrix& source_matrix, int source_column, int dest
   return result;
 }
 
-void Matrix::ApplyColumnPermutation(const Permutation& permutation) {
+bool Matrix::ApplyColumnPermutation(const Permutation& permutation) {
   assert(permutation.Size() == m_);
-  Matrix result(n_, m_);
+  Matrix result(elements_);
+  bool answer = false;
   for (int column = 0; column < m_; ++column) {
-    result.CopyColumn(*this, permutation.At(column), column);
+    answer |= result.CopyColumn(*this, permutation.At(column), column);
   }
   operator=(result);
+
+  return answer;
 }
 
 bool Matrix::IsLowerTriangular() const {
@@ -414,10 +421,10 @@ bool Matrix::IsDiagonal() const {
   return true;
 }
 
-Matrix Matrix::GetInverse() const {
+Matrix Matrix::GetInverse(Options::ChoiceType choice_type) const {
   assert(n_ == m_);
   LinearSystem inverser(*this, Identity(n_));
-  bool linear_independent = inverser.RunGauss();
+  bool linear_independent = inverser.RunGauss(choice_type);
   Options::writer << inverser << std::endl;
   if (!linear_independent) {
     return Matrix(n_, n_);
@@ -426,8 +433,8 @@ Matrix Matrix::GetInverse() const {
   return inverser.GetSolutionMatrix();
 }
 
-bool Matrix::Inverse() {
-  Matrix result = GetInverse();
+bool Matrix::Inverse(Options::ChoiceType choice_type) {
+  Matrix result = GetInverse(choice_type);
   if (result == 0) {
     return false;
   } else {
@@ -455,4 +462,41 @@ Matrix Matrix::Identity(int n) {
   }
 
   return identity;
+}
+
+Fraction Matrix::GetOctahedralNorm() const {
+    Fraction result = 0;
+    for (int column = 0; column < m_; ++column) {
+        Fraction sum = 0;
+        for (int row = 0; row < n_; ++row) {
+            sum += fabs(elements_[row][column]);
+        }
+        result = std::max(result, sum);
+    }
+
+    return result;
+}
+
+Fraction Matrix::GetCubicNorm() const {
+    Fraction result;
+    for (int row = 0; row < m_; ++row) {
+        Fraction sum = 0;
+        for (int column = 0; column < n_; ++column) {
+            sum += fabs(elements_[row][column]);
+        }
+        result = std::max(result, sum);
+    }
+
+    return result;
+}
+
+double Matrix::GetFrobeniusNorm() const {
+    Fraction result;
+    for (const auto& row : elements_) {
+        for (const auto& item : row) {
+            result += item * item;
+        }
+    }
+
+    return sqrt(result.ToDouble());
 }

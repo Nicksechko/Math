@@ -20,17 +20,43 @@ int main() {
             {n / 3, -1, n, -n}});
 
 
-  LUPMatrix lup_matrix = a.GetLUPTransform(Options::ChoiceType::Submatrix);
+  Options::writer << "n = " << n << std::endl;
+  Options::writer << "\\[" << std::endl;
+  Options::writer << a << std::endl;
+  Options::writer << "\\]" << std::endl;
+//  std::cout << a.GetOctahedralNorm() << std::endl;
 
+//  std::cout << a.GetCubicNorm() << std::endl;
+
+//  std::cout << a.GetFrobeniusNorm() << std::endl;
+
+  LUPMatrix lup_matrix = a.GetLUPTransform(Options::ChoiceType::Row);
+
+  Options::writer << "\\[" << std::endl;
   Options::writer << lup_matrix << std::endl;
+  Options::writer << "\\]" << std::endl;
+
+  Matrix inverse = lup_matrix.SolveSystem(Matrix::Identity(a.GetNumRows()));
+
+  assert(inverse * a == Matrix::Identity(a.GetNumRows()));
+
+  assert(a == lup_matrix.GetMatrix());
+
+  Options::writer << std::endl;
+  Options::writer << "\\[" << std::endl;
+  Options::writer << "\\mu_{1} = " << a.GetCubicNorm() * inverse.GetCubicNorm() << std::endl;
+  Options::writer << "\\]" << std::endl;
+  Options::writer << "\\[" << std::endl;
+  Options::writer << "\\mu_{\\infty} = " << a.GetOctahedralNorm() * inverse.GetOctahedralNorm() << std::endl;
+  Options::writer << "\\]" << std::endl;
+  Options::writer << "\\[" << std::endl;
+  Options::writer << "\\mu_{F} = " << a.GetFrobeniusNorm() * inverse.GetFrobeniusNorm() << std::endl;
+  Options::writer << "\\]" << std::endl;
 
   std::cout << Options::writer.str() << std::endl;
 
 //  std::cout << a << std::endl;
-//
-  std::cout << lup_matrix.GetMatrix() << std::endl;
 
-  assert(a == lup_matrix.GetMatrix());
 
   return 0;
 }

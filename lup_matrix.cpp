@@ -12,7 +12,7 @@ LUPMatrix::LUPMatrix(Matrix l, Matrix u,
 }
 
 LUPMatrix::LUPMatrix(const ExtendedMatrix& system)
-  : LUPMatrix(system.GetExtensionMatrix().GetInverse(), system.GetMainMatrix(),
+  : LUPMatrix(system.GetExtensionMatrix().GetInverse(Options::ChoiceType::Without), system.GetMainMatrix(),
               system.GetRowPermutation(), system.GetMainColumnPermutation()) {}
 
 const Matrix& LUPMatrix::GetLowerMatrix() const {
@@ -29,6 +29,39 @@ const Permutation& LUPMatrix::GetRowPermutation() const {
 
 const Permutation& LUPMatrix::GetColumnPermutation() const {
   return column_permutation_;
+}
+
+Matrix LUPMatrix::SolveSystem(const Matrix& rhs) const {
+    Matrix result = rhs;
+
+    if (result.ApplyRowPermutation(row_permutation_)) {
+        Options::writer << "\\[" << std::endl;
+        Options::writer << row_permutation_.AsMatrix() << "\\ *\\" << std::endl;
+        Options::writer << rhs << "\\ =\\" << std::endl;
+        Options::writer << result << std::endl;
+        Options::writer << "\\]" << std::endl;
+    }
+
+    LinearSystem lower_solver(l_, result);
+    lower_solver.RunGauss(Options::ChoiceType::Without);
+    Options::writer << lower_solver << std::endl;
+    result = lower_solver.GetSolutionMatrix();
+
+    LinearSystem upper_solver(u_, result);
+    upper_solver.RunGauss(Options::ChoiceType::Without);
+    Options::writer << upper_solver << std::endl;
+    result = upper_solver.GetSolutionMatrix();
+
+    Matrix answer = result;
+    if (answer.ApplyRowPermutation(column_permutation_.GetInverse())) {
+        Options::writer << "\\[" << std::endl;
+        Options::writer << column_permutation_.GetInverse().AsMatrix() << "\\ *\\" << std::endl;
+        Options::writer << result << "\\ =\\" << std::endl;
+        Options::writer << answer << std::endl;
+        Options::writer << "\\]";
+    }
+
+    return answer;
 }
 
 Matrix LUPMatrix::GetMatrix() const {
@@ -51,25 +84,24 @@ std::string LUPMatrix::ToString() const {
 
 std::string LUPMatrix::ToLaTex() const {
   std::ostringstream out;
-  out << "\\[" << std::endl;
-  out << "L: " << l_ << "\\quad" << std::endl;
-  out << "U: " << u_;
-  out << "\\]" << std::endl;
-  out << "\\[" << std::endl;
-  out << "Row Permutation: " << std::endl;
-  out << row_permutation_ << "\\quad" << std::endl;
-  out << "Column Permutation: " << std::endl;
-  out << column_permutation_ << std::endl;
-  out << "\\]" << std::endl;
+  if (!row_permutation_.IsIdentity()) {
+      out << row_permutation_.GetInverse().AsMatrix() << " \\ *\\" << std::endl;
+  }
+  out << l_ << " \\ *\\" << std::endl;
+  out << u_;
+  if (!column_permutation_.IsIdentity()) {
+      out << "\\ *\\" << std::endl;
+      out << column_permutation_.AsMatrix();
+  }
 
   return out.str();
 }
 
 std::ostream& operator<<(std::ostream& out, const LUPMatrix& lup_matrix) {
   if (Options::output_type == Options::OutputType::Standard) {
-    out << lup_matrix.ToString() << std::endl;
+    out << lup_matrix.ToString();
   } else if (Options::output_type == Options::OutputType::LaTex) {
-    out << lup_matrix.ToLaTex() << std::endl;
+    out << lup_matrix.ToLaTex();
   }
 
   return out;

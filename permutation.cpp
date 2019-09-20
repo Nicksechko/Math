@@ -92,3 +92,13 @@ std::ostream& operator<<(std::ostream& out, const Permutation& permutation) {
   return out;
 }
 
+bool Permutation::IsIdentity() const {
+    for (int i = 0; i < static_cast<int>(permutation_.size()); ++i) {
+        if (permutation_[i] != i) {
+            return false;
+        }
+    }
+
+    return true;
+}
+

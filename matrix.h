@@ -65,6 +65,8 @@ class Permutation {
 
   [[nodiscard]] Permutation GetInverse() const;
 
+  [[nodiscard]] bool IsIdentity() const;
+
   void Inverse();
 
   friend Permutation operator*(const Permutation& lhs, const Permutation& rhs);
@@ -137,7 +139,7 @@ class Matrix {
 
   bool CopyRow(const Matrix& source_matrix, int source_row, int destination_row);
 
-  void ApplyRowPermutation(const Permutation& permutation);
+  bool ApplyRowPermutation(const Permutation& permutation);
 
   bool AddColumn(int first_column, int second_column, Fraction coefficient = 1);
 
@@ -153,7 +155,7 @@ class Matrix {
 
   bool CopyColumn(const Matrix& source_matrix, int source_column, int destination_column);
 
-  void ApplyColumnPermutation(const Permutation& permutation);
+  bool ApplyColumnPermutation(const Permutation& permutation);
 
   [[nodiscard]] bool IsLowerTriangular() const;
 
@@ -161,12 +163,18 @@ class Matrix {
 
   [[nodiscard]] bool IsDiagonal() const;
 
-  [[nodiscard]] Matrix GetInverse() const;
+  [[nodiscard]] Matrix GetInverse(Options::ChoiceType choice_type = Options::ChoiceType::Column) const;
 
-  bool Inverse();
+  bool Inverse(Options::ChoiceType choice_type = Options::ChoiceType::Column);
 
   [[nodiscard]] LUPMatrix GetLUPTransform(
       Options::ChoiceType choice_type = Options::ChoiceType::Column) const;
+
+  [[nodiscard]] Fraction GetOctahedralNorm() const;
+
+  [[nodiscard]] Fraction GetCubicNorm() const;
+
+  [[nodiscard]] double GetFrobeniusNorm() const;
 
   static Matrix Identity(int n);
 
@@ -190,6 +198,8 @@ class LUPMatrix {
   [[nodiscard]] const Permutation& GetRowPermutation() const;
 
   [[nodiscard]] const Permutation& GetColumnPermutation() const;
+
+  [[nodiscard]] Matrix SolveSystem(const Matrix& rhs) const;
 
   [[nodiscard]] Matrix GetMatrix() const;
 

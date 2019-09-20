@@ -68,18 +68,25 @@ std::string LinearSystem::SwapMatrix::ToLaTex() const {
   out << "\\begin{bmatrix}" << std::endl;
   if (first_row_ != second_row_) {
     started = true;
+    out << "row: \\\\" << std::endl;
     out << first_row_  << " \\leftrightarrows " << second_row_;
   }
+  bool is_column_writed = false;
   if (first_main_column_ != second_main_column_) {
     if (started) {
       out << " \\\\" << std::endl;
     }
+    out << "col: \\\\" << std::endl;
+    is_column_writed = true;
     started = true;
     out << first_main_column_ << " \\leftrightarrows " << second_main_column_;
   }
   if (first_extension_column_ != second_extension_column_) {
     if (started) {
       out << " \\\\" << std::endl;
+    }
+    if (!is_column_writed) {
+        out << "col: \\\\" << std::endl;
     }
     out << first_extension_column_ << " \\leftrightarrows " << second_extension_column_;
   }

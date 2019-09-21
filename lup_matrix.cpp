@@ -36,7 +36,7 @@ Matrix LUPMatrix::SolveSystem(const Matrix& rhs) const {
 
     if (result.ApplyRowPermutation(row_permutation_)) {
         Options::writer << "\\[" << std::endl;
-        Options::writer << row_permutation_.AsMatrix() << "\\ *\\" << std::endl;
+        Options::writer << row_permutation_.AsMatrix() << R"(\ \cdot\)" << std::endl;
         Options::writer << rhs << "\\ =\\" << std::endl;
         Options::writer << result << std::endl;
         Options::writer << "\\]" << std::endl;
@@ -55,7 +55,7 @@ Matrix LUPMatrix::SolveSystem(const Matrix& rhs) const {
     Matrix answer = result;
     if (answer.ApplyRowPermutation(column_permutation_.GetInverse())) {
         Options::writer << "\\[" << std::endl;
-        Options::writer << column_permutation_.GetInverse().AsMatrix() << "\\ *\\" << std::endl;
+        Options::writer << column_permutation_.GetInverse().AsMatrix() << R"(\ \cdot\)" << std::endl;
         Options::writer << result << "\\ =\\" << std::endl;
         Options::writer << answer << std::endl;
         Options::writer << "\\]";
@@ -85,12 +85,12 @@ std::string LUPMatrix::ToString() const {
 std::string LUPMatrix::ToLaTex() const {
   std::ostringstream out;
   if (!row_permutation_.IsIdentity()) {
-      out << row_permutation_.GetInverse().AsMatrix() << " \\ *\\" << std::endl;
+      out << row_permutation_.GetInverse().AsMatrix() << R"( \ \cdot\)" << std::endl;
   }
-  out << l_ << " \\ *\\" << std::endl;
+  out << l_ << R"( \ \cdot\)" << std::endl;
   out << u_;
   if (!column_permutation_.IsIdentity()) {
-      out << "\\ *\\" << std::endl;
+      out << R"(\ \cdot\)" << std::endl;
       out << column_permutation_.AsMatrix();
   }
 
